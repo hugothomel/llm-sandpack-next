@@ -22,8 +22,43 @@ interface ApiStatus {
   message: string;
 }
 
-// Custom component to interact with Sandpack
-const SandpackEditorContent = () => {
+// Basic initial files
+const initialFiles = {
+  '/index.js': {
+    code: `// This is a sample JavaScript file
+// Try asking the LLM to modify this code
+
+function greet(name) {
+  console.log("Hello, " + name + "!");
+  document.getElementById("app").innerHTML = \`<h1>Hello, \${name}!</h1>\`;
+}
+
+greet("Sandpack User");
+
+// Try asking for a bug fix:
+function brokenFunction() {
+  let x = 5
+  console.log("The value is: " + x)
+  return x
+}`
+  },
+  '/index.html': {
+    code: `<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sandpack Example</title>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="index.js"></script>
+  </body>
+</html>`
+  }
+};
+
+// Command handling component
+const CommandPanel = () => {
   const { sandpack } = useSandpack();
   const { files, activeFile, updateFile } = sandpack;
   const [logs, setLogs] = useState<Log[]>([]);
@@ -113,71 +148,65 @@ const SandpackEditorContent = () => {
   );
 
   return (
-    <div className="flex flex-col space-y-4">
-      <SandpackLayout className="rounded-lg overflow-hidden">
-        <SandpackCodeEditor showLineNumbers={true} />
-        <SandpackPreview />
-      </SandpackLayout>
-      <div className="p-4 border rounded-lg">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-medium">LLM Command</h3>
-          {apiStatusBadge}
-        </div>
-        <LLMCommandInput onSubmit={handleLLMCommand} isLoading={isLoading} />
-        <h3 className="text-lg font-medium mt-6 mb-2">Logs</h3>
-        <LogDisplay logs={logs} />
+    <div className="p-4 border rounded-lg">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-lg font-medium">LLM Command</h3>
+        {apiStatusBadge}
       </div>
+      <LLMCommandInput onSubmit={handleLLMCommand} isLoading={isLoading} />
+      <h3 className="text-lg font-medium mt-6 mb-2">Logs</h3>
+      <LogDisplay logs={logs} />
     </div>
   );
 };
 
-// Initial sandbox files
-const initialFiles = {
-  '/index.js': {
-    code: `// This is a sample JavaScript file
-// Try asking the LLM to modify this code
-
-function greet(name) {
-  console.log("Hello, " + name + "!");
-}
-
-greet("Sandpack User");
-
-// Try asking for a bug fix:
-function brokenFunction() {
-  let x = 5
-  console.log("The value is: " + x)
-  return x
-}`
-  },
-  '/index.html': {
-    code: `<!DOCTYPE html>
-<html>
-  <head>
-    <title>Sandpack Example</title>
-    <meta charset="UTF-8" />
-  </head>
-  <body>
-    <div id="app"></div>
-    <script src="index.js"></script>
-  </body>
-</html>`
-  }
-};
-
+// Main component - following the structure from the documentation
 const SandpackEditor = () => {
+  // Browser-side rendering check
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return <div className="h-[600px] w-full border rounded-lg bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
+        <p className="mt-4 text-lg">Loading Sandpack Editor...</p>
+      </div>
+    </div>;
+  }
+
   return (
-    <SandpackProvider
-      template="vanilla"
-      theme="light"
-      files={initialFiles}
-      options={{
-        recompileMode: "delayed",
-        recompileDelay: 500,
-      }}
-    >
-      <SandpackEditorContent />
-    </SandpackProvider>
+    <div className="flex flex-col space-y-6">
+      <div className="h-[600px] w-full">
+        <SandpackProvider
+          template="vanilla"
+          theme="light"
+          files={initialFiles}
+          options={{
+            bundlerURL: "https://sandpack-bundler.codesandbox.io",
+            externalResources: ["https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"]
+          }}
+        >
+          <SandpackLayout>
+            <SandpackCodeEditor 
+              showLineNumbers={true} 
+              showInlineErrors={true}
+              wrapContent
+              style={{ height: '100%', minWidth: '40%', maxWidth: '50%' }}
+            />
+            <SandpackPreview 
+              showNavigator={true}
+              showRefreshButton={true}
+              style={{ height: '100%', minWidth: '50%', flexGrow: 1 }}
+            />
+          </SandpackLayout>
+          <CommandPanel />
+        </SandpackProvider>
+      </div>
+    </div>
   );
 };
 
