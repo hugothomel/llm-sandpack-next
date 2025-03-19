@@ -254,7 +254,7 @@ const CommandPanel = () => {
   const handleCancelPlan = () => {
     setPlanningStep(false);
     setPlan(null);
-    setLogs(prev => [...prev, { type: 'info', message: 'Plan cancelled.' }]);
+    addLog({ type: 'info', message: 'Plan cancelled.' });
   };
 
   // Execute the command
