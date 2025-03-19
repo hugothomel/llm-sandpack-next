@@ -33,6 +33,8 @@ export async function generatePlan(
   
   // If the command mentions specific files or file types, include them
   Object.keys(files).forEach(filePath => {
+    if (filePath === activeFile) return; // Skip active file, already included
+    
     const ext = filePath.split('.').pop() || '';
     
     if (command.toLowerCase().includes(ext) && !filesToModify.includes(filePath)) {
@@ -47,6 +49,40 @@ export async function generatePlan(
     }
   });
   
+  // Check if we need to create a new file based on command keywords
+  const shouldCreateNewFile = 
+    command.toLowerCase().includes('create') || 
+    command.toLowerCase().includes('new file') || 
+    command.toLowerCase().includes('add file');
+    
+  // Add new file suggestion if command seems to ask for it
+  if (shouldCreateNewFile) {
+    // Try to determine file type from the command
+    let fileExtension = 'js'; // Default to JS
+    if (command.toLowerCase().includes('css')) fileExtension = 'css';
+    else if (command.toLowerCase().includes('html')) fileExtension = 'html';
+    else if (command.toLowerCase().includes('typescript') || command.toLowerCase().includes('ts')) fileExtension = 'ts';
+    else if (command.toLowerCase().includes('component') || command.toLowerCase().includes('react')) fileExtension = 'jsx';
+    
+    // Try to extract a name for the new file from the command
+    let fileName = 'NewFile';
+    const nameMatch = command.match(/(?:create|new|add)\s+(?:file|component)?\s+(?:called|named)?\s+['"]?([a-zA-Z0-9_-]+)['"]?/i);
+    if (nameMatch && nameMatch[1]) {
+      fileName = nameMatch[1];
+    }
+    
+    // Ensure the first letter is capitalized for components
+    if (fileExtension === 'jsx' || fileExtension === 'tsx') {
+      fileName = fileName.charAt(0).toUpperCase() + fileName.slice(1);
+    }
+    
+    const newFilePath = `/${fileName}.${fileExtension}`;
+    
+    // Add to the files to modify list
+    filesToModify.push(newFilePath);
+    fileExplanations[newFilePath] = `NEW: This new file will be created as requested in the command.`;
+  }
+  
   // Determine a description based on the command
   let description = `[MOCK] I'll modify ${filesToModify.length} file(s) based on your command.`;
   
@@ -56,6 +92,8 @@ export async function generatePlan(
     description = `[MOCK] I'll add new functionality as requested.`;
   } else if (command.toLowerCase().includes('refactor')) {
     description = `[MOCK] I'll refactor the code to improve its structure and readability.`;
+  } else if (shouldCreateNewFile) {
+    description = `[MOCK] I'll create a new file and implement the requested functionality.`;
   }
   
   return {
@@ -74,18 +112,94 @@ export async function generatePlan(
  * @param {string} code - Current code to be modified
  * @param {string} filePath - Path of the file being modified
  * @param {Record<string, string>} [allFiles] - All files in the project for context
+ * @param {boolean} [isNewFile] - Whether this is a new file being created
  * @returns {Promise<CommandResult>} Modified code and message
  */
 export async function processCommand(
   command: string, 
   code: string, 
   filePath: string,
-  allFiles?: Record<string, string>
+  allFiles?: Record<string, string>,
+  isNewFile?: boolean
 ): Promise<CommandResult> {
   console.log(`[MOCK] Processing command: ${command} for ${filePath}`);
   console.log(`[MOCK] Context includes ${allFiles ? Object.keys(allFiles).length : 0} files`);
+  console.log(`[MOCK] Is creating new file: ${isNewFile ? 'Yes' : 'No'}`);
   
-  // Simple processing based on keywords in the command
+  // Handle new file creation
+  if (isNewFile) {
+    const fileExtension = filePath.split('.').pop() || '';
+    let newFileContent = '';
+    
+    // Generate appropriate mock content based on file extension
+    if (fileExtension === 'js' || fileExtension === 'jsx') {
+      newFileContent = `// [MOCK] New JavaScript file: ${filePath}
+// Created based on command: ${command}
+
+/**
+ * This is a mock implementation created by the Mock LLM Service
+ */
+function main() {
+  console.log("New file created: ${filePath}");
+  return "Hello from mock file!";
+}
+
+export default main;`;
+    } else if (fileExtension === 'ts' || fileExtension === 'tsx') {
+      newFileContent = `// [MOCK] New TypeScript file: ${filePath}
+// Created based on command: ${command}
+
+/**
+ * This is a mock implementation created by the Mock LLM Service
+ */
+function main(): string {
+  console.log("New file created: ${filePath}");
+  return "Hello from mock file!";
+}
+
+export default main;`;
+    } else if (fileExtension === 'html') {
+      newFileContent = `<!DOCTYPE html>
+<html>
+<head>
+  <title>[MOCK] New HTML File</title>
+  <meta charset="UTF-8">
+</head>
+<body>
+  <h1>New HTML File Created</h1>
+  <p>This file was created based on: ${command}</p>
+</body>
+</html>`;
+    } else if (fileExtension === 'css') {
+      newFileContent = `/* [MOCK] New CSS file: ${filePath} */
+/* Created based on command: ${command} */
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+h1 {
+  color: #333;
+}`;
+    } else {
+      // Generic content for other file types
+      newFileContent = `// [MOCK] New file: ${filePath}
+// Created based on command: ${command}
+
+// This is a mock implementation created by the Mock LLM Service
+// for demonstration purposes only.`;
+    }
+    
+    return {
+      newCode: newFileContent,
+      message: `[MOCK] Successfully created new file: ${filePath}`
+    };
+  }
+  
+  // Existing processing for modifying files - rest of the function unchanged
   if (command.toLowerCase().includes('fix') && command.toLowerCase().includes('bug')) {
     // Fix missing semicolons
     const newCode = code.replace(/let x = 5\n/g, 'let x = 5;\n');

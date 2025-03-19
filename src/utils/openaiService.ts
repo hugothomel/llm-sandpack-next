@@ -105,10 +105,18 @@ Please analyze all file contents to understand their purpose and relationships.
 Look for dependencies between files and how they interact with each other.
 Consider which files would need to change to fulfill the user's command.
 
+IMPORTANT: You can suggest creating NEW files if the task requires it. You should do this when:
+1. The command asks to add a new component, module, or feature
+2. Best practices suggest separating concerns into different files
+3. The task would be better implemented in a new file rather than modifying existing ones
+
 For your response, follow this format exactly:
 1. A description of what needs to be done (2-3 sentences)
-2. A JSON array listing the file paths that need to be modified (e.g., ["/index.js", "/styles.css"])
-3. For each file in the array, provide a brief explanation of why it needs to be modified (one sentence per file)
+2. A JSON array listing the file paths that need to be modified or created (e.g., ["/index.js", "/styles.css", "/NEW_FILE.js"])
+3. For each file in the array, provide a brief explanation of why it needs to be modified or if it needs to be created
+
+When suggesting a new file, include "NEW:" at the beginning of the explanation.
+File paths for new files should reflect a reasonable location in the project structure.
 
 Do not include any explanations outside of this format.
 Only list files that are relevant to the command and genuinely need changes.
@@ -161,28 +169,40 @@ If only one file needs changes, that's fine - don't force changes to multiple fi
       filesToModify = [activeFile];
     }
     
-    // Validate the file paths - only include files that actually exist
-    filesToModify = filesToModify.filter(filePath => files[filePath] !== undefined);
+    // Filter files to separate existing files from new files
+    const existingFilePaths = Object.keys(files);
+    const newFilesToCreate = filesToModify.filter(path => !existingFilePaths.includes(path));
+    const existingFilesToModify = filesToModify.filter(path => existingFilePaths.includes(path));
+    
+    // Combine both lists, but put existing files first
+    const orderedFilesToModify = [...existingFilesToModify, ...newFilesToCreate];
     
     // Extract explanations for each file if available
     const fileExplanations: Record<string, string> = {};
-    filesToModify.forEach(filePath => {
+    orderedFilesToModify.forEach(filePath => {
       // Look for explanations after the JSON array
       const filePathEscaped = filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const explanationRegex = new RegExp(`${filePathEscaped}[^\\n]*:?\\s*([^\\n]+)`, 'i');
       const match = responseText.match(explanationRegex);
       
+      // Check if this is a new file
+      const isNewFile = !existingFilePaths.includes(filePath);
+      
       if (match && match[1]) {
-        fileExplanations[filePath] = match[1].trim();
+        fileExplanations[filePath] = isNewFile 
+          ? `NEW: ${match[1].trim()}`
+          : match[1].trim();
       } else {
-        fileExplanations[filePath] = "Will be modified based on the command.";
+        fileExplanations[filePath] = isNewFile 
+          ? "NEW: This file will be created as requested."
+          : "Will be modified based on the command.";
       }
     });
     
     return {
       plan: {
         description,
-        filesToModify,
+        filesToModify: orderedFilesToModify,
         fileExplanations
       },
       message: "Plan generated successfully with detailed file analysis."
@@ -216,13 +236,15 @@ If only one file needs changes, that's fine - don't force changes to multiple fi
  * @param {string} code - Current code to be modified
  * @param {string} filePath - Path of the file being modified
  * @param {Record<string, string>} [allFiles] - All files in the project for context
+ * @param {boolean} [isNewFile] - Whether this is a new file being created
  * @returns {Promise<CommandResult>} Modified code and message
  */
 export async function processCommand(
   command: string, 
   code: string, 
   filePath: string,
-  allFiles?: Record<string, string>
+  allFiles?: Record<string, string>,
+  isNewFile?: boolean
 ): Promise<CommandResult> {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -233,6 +255,7 @@ export async function processCommand(
     }
     
     console.log(`Processing command with OpenAI (${MODEL}): "${command}" for ${filePath}`);
+    console.log(`Is creating new file: ${isNewFile ? 'Yes' : 'No'}`);
     
     // Determine file type from path for better context
     const fileExtension = filePath.split('.').pop();
@@ -318,7 +341,18 @@ export async function processCommand(
     }
 
     // Construct the prompt for GPT
-    const systemPrompt = `You are an expert ${language} developer. 
+    const systemPrompt = isNewFile 
+      ? `You are an expert ${language} developer.
+You are being asked to create a new file called ${filePath}.
+Based on the command and the context of other project files, generate appropriate code for this new file.
+The file should be fully functional and follow best practices for ${language}.
+
+${allFiles ? 'You have access to other files in the project for context to understand the codebase better.' : ''}
+${allFiles ? 'Use this context to ensure your new file is consistent with the project structure and patterns.' : ''}
+
+Do not include any explanations, comments about what you did, or markdown formatting in your response.
+Just return the complete code for the new file that addresses the user's request.`
+      : `You are an expert ${language} developer. 
 You will be given a piece of code and a command describing how to modify it.
 Analyze the code, understand what changes are needed, and return only the modified code.
 
@@ -334,7 +368,7 @@ If you cannot make the requested change, return the original code unchanged.`;
       model: MODEL,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `CURRENT FILE (${filePath}):\n\`\`\`${language}\n${code}\n\`\`\`\n\nCOMMAND: ${command}${filesContext}` }
+        { role: "user", content: `${isNewFile ? 'CREATE NEW FILE' : 'CURRENT FILE'} (${filePath}):\n\`\`\`${language}\n${code}\n\`\`\`\n\nCOMMAND: ${command}${filesContext}` }
       ],
       temperature: 0.2, // Lower temperature for more deterministic results
       max_tokens: 2048, // Limit response size
@@ -351,8 +385,8 @@ If you cannot make the requested change, return the original code unchanged.`;
       };
     }
     
-    // Compare to see if code was changed
-    if (newCode === code) {
+    // For new files, any content is valid. For existing files, compare to see if code was changed
+    if (!isNewFile && newCode === code) {
       return {
         newCode: null,
         message: "The AI understood your request but determined no changes were needed."
@@ -361,7 +395,9 @@ If you cannot make the requested change, return the original code unchanged.`;
     
     return {
       newCode,
-      message: `Successfully modified code based on: "${command}"`
+      message: isNewFile 
+        ? `Successfully created new file ${filePath}` 
+        : `Successfully modified code based on: "${command}"`
     };
   } catch (error: any) {
     console.error('OpenAI API Error:', error);

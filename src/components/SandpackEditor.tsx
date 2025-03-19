@@ -8,6 +8,8 @@ import {
   SandpackPreview,
   useSandpack
 } from '@codesandbox/sandpack-react';
+// @ts-ignore - Module has no explicit type declarations
+import { SandpackFileExplorer } from 'sandpack-file-explorer';
 import LogDisplay from './LogDisplay';
 import LLMCommandInput from './LLMCommandInput';
 
@@ -204,39 +206,75 @@ const CommandPanel = () => {
       
       // Process each file in sequence
       for (const filePath of plan.filesToModify) {
-        // Skip files that don't exist
-        if (!files[filePath]) {
-          addLog({ type: 'warning', message: `File not found: ${filePath}` });
-          continue;
-        }
+        // Check if the file already exists or needs to be created
+        const fileExists = files[filePath] !== undefined;
         
-        addLog({ type: 'info', message: `Modifying: ${filePath}` });
-        
-        // Call API to process command for this file
-        const response = await fetch('/api/llm-command', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            command: commandText,
-            currentCode: files[filePath].code,
-            filePath: filePath,
-            allFiles: allFiles // Send all files for context
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          addLog({ type: 'error', message: `Error updating ${filePath}: ${data.error || 'Unknown error'}` });
-          continue;
-        }
-        
-        if (data.newCode) {
-          // Update the file in Sandpack
-          updateFile(filePath, data.newCode);
-          addLog({ type: 'success', message: `Updated ${filePath}: ${data.message}` });
+        if (!fileExists) {
+          addLog({ type: 'info', message: `Creating new file: ${filePath}` });
+          
+          // For new files, generate content from scratch
+          const response = await fetch('/api/llm-command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              command: `${commandText} - Create new file ${filePath}`,
+              currentCode: '', // Start with empty content
+              filePath: filePath,
+              allFiles: allFiles,
+              isNewFile: true // Indicate this is a new file
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            addLog({ type: 'error', message: `Error creating ${filePath}: ${data.error || 'Unknown error'}` });
+            continue;
+          }
+          
+          if (data.newCode) {
+            // Create the new file in Sandpack
+            updateFile(filePath, data.newCode);
+            addLog({ type: 'success', message: `Created new file ${filePath}: ${data.message}` });
+            
+            // Add the new file to our context for subsequent file modifications
+            allFiles[filePath] = data.newCode;
+          } else {
+            addLog({ type: 'warning', message: `Failed to create new file ${filePath}: ${data.message}` });
+          }
         } else {
-          addLog({ type: 'warning', message: `No changes made to ${filePath}: ${data.message}` });
+          addLog({ type: 'info', message: `Modifying: ${filePath}` });
+          
+          // Call API to process command for this existing file
+          const response = await fetch('/api/llm-command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              command: commandText,
+              currentCode: files[filePath].code,
+              filePath: filePath,
+              allFiles: allFiles,
+              isNewFile: false
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            addLog({ type: 'error', message: `Error updating ${filePath}: ${data.error || 'Unknown error'}` });
+            continue;
+          }
+          
+          if (data.newCode) {
+            // Update the file in Sandpack
+            updateFile(filePath, data.newCode);
+            addLog({ type: 'success', message: `Updated ${filePath}: ${data.message}` });
+            
+            // Update our context with the new content
+            allFiles[filePath] = data.newCode;
+          } else {
+            addLog({ type: 'warning', message: `No changes made to ${filePath}: ${data.message}` });
+          }
         }
       }
       
@@ -327,16 +365,32 @@ const CommandPanel = () => {
             <div className="my-3">
               <h5 className="text-sm font-medium">Files to be modified:</h5>
               <ul className="list-disc pl-5 mt-1">
-                {plan.filesToModify.map(file => (
-                  <li key={file} className="text-sm">
-                    <strong>{file}</strong>
-                    {plan.fileExplanations && plan.fileExplanations[file] && (
-                      <p className="text-xs text-gray-600 ml-1">
-                        {plan.fileExplanations[file]}
-                      </p>
-                    )}
-                  </li>
-                ))}
+                {plan.filesToModify.map(file => {
+                  const isNewFile = plan.fileExplanations && 
+                    plan.fileExplanations[file] && 
+                    plan.fileExplanations[file].startsWith('NEW:');
+                    
+                  return (
+                    <li key={file} className="text-sm mb-2">
+                      <div className="flex items-center">
+                        <strong>{file}</strong>
+                        {isNewFile && (
+                          <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
+                            New File
+                          </span>
+                        )}
+                      </div>
+                      {plan.fileExplanations && plan.fileExplanations[file] && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          {isNewFile 
+                            ? plan.fileExplanations[file].replace('NEW:', '') 
+                            : plan.fileExplanations[file]
+                          }
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
                         
@@ -402,19 +456,26 @@ const SandpackEditor = () => {
             externalResources: ["https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"]
           }}
         >
-          <SandpackLayout>
-            <SandpackCodeEditor 
-              showLineNumbers={true} 
-              showInlineErrors={true}
-              wrapContent
-              style={{ height: '100%', minWidth: '40%', maxWidth: '50%' }}
-            />
-            <SandpackPreview 
-              showNavigator={true}
-              showRefreshButton={true}
-              style={{ height: '100%', minWidth: '50%', flexGrow: 1 }}
-            />
-          </SandpackLayout>
+          <div className="flex h-full">
+            <div className="w-1/5 bg-gray-50 border-r">
+              <SandpackFileExplorer />
+            </div>
+            <div className="flex-1">
+              <SandpackLayout>
+                <SandpackCodeEditor 
+                  showLineNumbers={true} 
+                  showInlineErrors={true}
+                  wrapContent
+                  style={{ height: '100%', minWidth: '40%', maxWidth: '50%' }}
+                />
+                <SandpackPreview 
+                  showNavigator={true}
+                  showRefreshButton={true}
+                  style={{ height: '100%', minWidth: '50%', flexGrow: 1 }}
+                />
+              </SandpackLayout>
+            </div>
+          </div>
           <CommandPanel />
         </SandpackProvider>
       </div>

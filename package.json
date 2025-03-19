@@ -14,7 +14,8 @@
     "next": "15.2.3",
     "openai": "^4.87.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sandpack-file-explorer": "^0.0.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

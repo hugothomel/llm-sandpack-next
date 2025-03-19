@@ -9,9 +9,9 @@ export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { command, currentCode, filePath, allFiles } = body;
+    const { command, currentCode, filePath, allFiles, isNewFile } = body;
     
-    if (!command || !currentCode || !filePath) {
+    if (!command || currentCode === undefined || !filePath) {
       return NextResponse.json(
         { error: "Command, code, and filePath are required" },
         { status: 400 }
@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
     
     // Log for debugging
     console.log(`Processing command: "${command}" for ${filePath}`);
+    console.log(`Is creating new file: ${isNewFile ? 'yes' : 'no'}`);
     console.log(`OpenAI API Key available: ${!!process.env.OPENAI_API_KEY}`);
     
     // Determine which service to use
@@ -27,8 +28,8 @@ export async function POST(req: NextRequest) {
       ? openaiService 
       : mockService;
     
-    // Call the OpenAI service to process the command
-    const result = await processCommand(command, currentCode, filePath, allFiles);
+    // Call the OpenAI service to process the command with the new file flag
+    const result = await processCommand(command, currentCode, filePath, allFiles, isNewFile);
     
     return NextResponse.json(result);
   } catch (error: any) {
