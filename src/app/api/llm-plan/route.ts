@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generatePlan } from "../../../src/utils/openaiService";
+import { generatePlan } from "@/utils/openaiService";
 import * as mockService from "@/utils/mockService";
 
 // Use Node.js runtime for OpenAI API

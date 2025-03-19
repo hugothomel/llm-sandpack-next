@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import SandpackStyles from "../src/components/SandpackStyles";
+import SandpackStyles from "@/components/SandpackStyles";
 
 const inter = Inter({ subsets: ["latin"] });
 
