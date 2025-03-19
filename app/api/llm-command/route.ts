@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as openaiService from '@/utils/openaiService';
 import * as mockService from '@/utils/mockService';
+import { processCommand } from "../../../src/utils/openaiService";
 
 // Use Node.js runtime for OpenAI API
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { command, currentCode, filePath } = body;
+    const body = await req.json();
+    const { command, currentCode, filePath, allFiles } = body;
     
     if (!command || !currentCode || !filePath) {
       return NextResponse.json(
-        { message: "Missing required parameters: command, currentCode, or filePath" },
+        { error: "Command, code, and filePath are required" },
         { status: 400 }
       );
     }
@@ -26,14 +27,14 @@ export async function POST(request: NextRequest) {
       ? openaiService 
       : mockService;
     
-    // Process the command with the chosen LLM service
-    const result = await llmService.processCommand(command, currentCode, filePath);
+    // Call the OpenAI service to process the command
+    const result = await processCommand(command, currentCode, filePath, allFiles);
     
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error('Error processing LLM command:', error);
+    console.error("Error in LLM command API:", error);
     return NextResponse.json(
-      { message: `Server error processing LLM command: ${error.message}` },
+      { error: error.message || "An unexpected error occurred" },
       { status: 500 }
     );
   }
