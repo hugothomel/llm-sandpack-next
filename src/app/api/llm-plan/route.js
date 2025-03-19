@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { generatePlan } from "@/utils/openaiService";
 import * as mockService from "@/utils/mockService";
 
 // Use Node.js runtime for OpenAI API
 export const runtime = 'nodejs';
 
-export async function POST(req: NextRequest) {
+export async function POST(req) {
   try {
     const body = await req.json();
     const { command, activeFile, files } = body;
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     }
     
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in LLM planning API:", error);
     return NextResponse.json(
       { error: error.message || "An unexpected error occurred" },

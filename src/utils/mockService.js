@@ -1,34 +1,16 @@
-interface CommandResult {
-  newCode: string | null;
-  message: string;
-}
-
-interface PlanResult {
-  plan: {
-    description: string;
-    filesToModify: string[];
-    fileExplanations: Record<string, string>;
-  } | null;
-  message: string;
-}
-
 /**
  * Mock LLM plan generation for when OpenAI API key is not available
  * @param {string} command - Natural language command from user
  * @param {Record<string, string>} files - Object with file paths as keys and code content as values
  * @param {string} activeFile - Currently active file path
- * @returns {Promise<PlanResult>} Plan with files to modify and description
+ * @returns {Promise<Object>} Plan with files to modify and description
  */
-export async function generatePlan(
-  command: string,
-  files: Record<string, string>,
-  activeFile: string
-): Promise<PlanResult> {
+export async function generatePlan(command, files, activeFile) {
   console.log(`[MOCK] Generating plan for command: ${command}`);
   
   // Simple plan generation based on keywords in the command
-  const filesToModify: string[] = [activeFile];
-  const fileExplanations: Record<string, string> = {};
+  const filesToModify = [activeFile];
+  const fileExplanations = {};
   fileExplanations[activeFile] = "This is the active file that will be modified.";
   
   // If the command mentions specific files or file types, include them
@@ -113,15 +95,9 @@ export async function generatePlan(
  * @param {string} filePath - Path of the file being modified
  * @param {Record<string, string>} [allFiles] - All files in the project for context
  * @param {boolean} [isNewFile] - Whether this is a new file being created
- * @returns {Promise<CommandResult>} Modified code and message
+ * @returns {Promise<Object>} Modified code and message
  */
-export async function processCommand(
-  command: string, 
-  code: string, 
-  filePath: string,
-  allFiles?: Record<string, string>,
-  isNewFile?: boolean
-): Promise<CommandResult> {
+export async function processCommand(command, code, filePath, allFiles, isNewFile) {
   console.log(`[MOCK] Processing command: ${command} for ${filePath}`);
   console.log(`[MOCK] Context includes ${allFiles ? Object.keys(allFiles).length : 0} files`);
   console.log(`[MOCK] Is creating new file: ${isNewFile ? 'Yes' : 'No'}`);

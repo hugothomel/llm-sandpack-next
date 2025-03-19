@@ -9,32 +9,14 @@ const openai = new OpenAI({
 const DEFAULT_MODEL = 'gpt-3.5-turbo';
 const MODEL = process.env.OPENAI_MODEL || DEFAULT_MODEL;
 
-interface CommandResult {
-  newCode: string | null;
-  message: string;
-}
-
-interface PlanResult {
-  plan: {
-    description: string;
-    filesToModify: string[];
-    fileExplanations: Record<string, string>;
-  } | null;
-  message: string;
-}
-
 /**
  * Generate a plan for modifying code based on a command
  * @param {string} command - Natural language command from user
  * @param {Record<string, string>} files - Object with file paths as keys and code content as values
  * @param {string} activeFile - Currently active file path
- * @returns {Promise<PlanResult>} Plan with files to modify and description
+ * @returns {Promise<Object>} Plan with files to modify and description
  */
-export async function generatePlan(
-  command: string,
-  files: Record<string, string>,
-  activeFile: string
-): Promise<PlanResult> {
+export async function generatePlan(command, files, activeFile) {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return {
@@ -54,7 +36,7 @@ export async function generatePlan(
     const MAX_FILES_FOR_FULL_CONTENT = 5;
     const MAX_FILE_SIZE = 5000; // Characters per file for non-active files
     
-    let filesContent: string;
+    let filesContent;
     
     if (fileEntries.length <= MAX_FILES_FOR_FULL_CONTENT) {
       // Include full content of all files for small projects
@@ -64,7 +46,7 @@ export async function generatePlan(
     } else {
       // For larger projects, be more selective
       // First, create file type groups
-      const filesByExtension: Record<string, string[]> = {};
+      const filesByExtension = {};
       fileEntries.forEach(([path]) => {
         const ext = path.split('.').pop() || 'unknown';
         if (!filesByExtension[ext]) filesByExtension[ext] = [];
@@ -151,7 +133,7 @@ If only one file needs changes, that's fine - don't force changes to multiple fi
     // Look for a JSON array in the response
     // Use a regex that works without 's' flag for ES2018 compatibility
     const fileListMatch = responseText.match(/\[([\s\S]*?)\]/);
-    let filesToModify: string[] = [];
+    let filesToModify = [];
     
     if (fileListMatch) {
       try {
@@ -178,7 +160,7 @@ If only one file needs changes, that's fine - don't force changes to multiple fi
     const orderedFilesToModify = [...existingFilesToModify, ...newFilesToCreate];
     
     // Extract explanations for each file if available
-    const fileExplanations: Record<string, string> = {};
+    const fileExplanations = {};
     orderedFilesToModify.forEach(filePath => {
       // Look for explanations after the JSON array
       const filePathEscaped = filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -207,7 +189,7 @@ If only one file needs changes, that's fine - don't force changes to multiple fi
       },
       message: "Plan generated successfully with detailed file analysis."
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('OpenAI API Error during planning:', error);
     
     // Handle different types of errors
@@ -237,15 +219,9 @@ If only one file needs changes, that's fine - don't force changes to multiple fi
  * @param {string} filePath - Path of the file being modified
  * @param {Record<string, string>} [allFiles] - All files in the project for context
  * @param {boolean} [isNewFile] - Whether this is a new file being created
- * @returns {Promise<CommandResult>} Modified code and message
+ * @returns {Promise<Object>} Modified code and message
  */
-export async function processCommand(
-  command: string, 
-  code: string, 
-  filePath: string,
-  allFiles?: Record<string, string>,
-  isNewFile?: boolean
-): Promise<CommandResult> {
+export async function processCommand(command, code, filePath, allFiles, isNewFile) {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return {
@@ -399,7 +375,7 @@ If you cannot make the requested change, return the original code unchanged.`;
         ? `Successfully created new file ${filePath}` 
         : `Successfully modified code based on: "${command}"`
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('OpenAI API Error:', error);
     
     // Handle different types of errors

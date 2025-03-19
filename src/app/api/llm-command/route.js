@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import * as openaiService from '@/utils/openaiService';
 import * as mockService from '@/utils/mockService';
 import { processCommand } from '@/utils/openaiService';
@@ -6,7 +6,7 @@ import { processCommand } from '@/utils/openaiService';
 // Use Node.js runtime for OpenAI API
 export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     const body = await request.json();
     const { command, currentCode, filePath, allFiles, isNewFile } = body;
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const result = await processCommand(command, currentCode, filePath, allFiles, isNewFile);
     
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error processing LLM command:', error);
     return NextResponse.json(
       { message: `Server error processing LLM command: ${error.message}` },
