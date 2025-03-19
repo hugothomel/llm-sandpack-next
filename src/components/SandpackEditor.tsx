@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   SandpackProvider, 
-  SandpackLayout, 
   SandpackCodeEditor, 
   SandpackPreview,
   useSandpack
@@ -426,7 +425,7 @@ const CommandPanel = () => {
   );
 };
 
-// Main component - following the structure from the documentation
+// Main component
 const SandpackEditor = () => {
   // Browser-side rendering check
   const [isMounted, setIsMounted] = useState(false);
@@ -436,10 +435,10 @@ const SandpackEditor = () => {
   }, []);
 
   if (!isMounted) {
-    return <div className="h-[600px] w-full border rounded-lg bg-gray-50 flex items-center justify-center">
+    return <div className="h-[600px] w-full border border-gray-700 rounded-lg bg-[#1e1e1e] flex items-center justify-center">
       <div className="text-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
-        <p className="mt-4 text-lg">Loading Sandpack Editor...</p>
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-400 border-r-transparent"></div>
+        <p className="mt-4 text-lg text-gray-300">Loading Sandpack Editor...</p>
       </div>
     </div>;
   }
@@ -449,38 +448,40 @@ const SandpackEditor = () => {
       <div className="h-[600px] w-full">
         <SandpackProvider
           template="vanilla"
-          theme="light"
+          theme="dark"
           files={initialFiles}
           options={{
             bundlerURL: "https://sandpack-bundler.codesandbox.io",
             externalResources: ["https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"]
           }}
         >
-          <div className="flex h-full">
-            <div className="w-1/5 bg-gray-50 border-r">
-              <SandpackFileExplorer />
-            </div>
-            <div className="flex-1">
-              <SandpackLayout>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+              <div style={{ width: '240px', overflowY: 'auto', borderRight: '1px solid rgb(55, 55, 55)' }}>
+                <SandpackFileExplorer />
+              </div>
+              <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                 <SandpackCodeEditor 
-                  showLineNumbers={true} 
-                  showInlineErrors={true}
+                  style={{ flex: 1, height: '100%', minWidth: 0 }}
+                  showLineNumbers={true}
+                  showInlineErrors={true} 
                   wrapContent
-                  style={{ height: '100%', minWidth: '40%', maxWidth: '50%' }}
                 />
                 <SandpackPreview 
+                  style={{ flex: 1, height: '100%', minWidth: 0 }}
                   showNavigator={true}
                   showRefreshButton={true}
-                  style={{ height: '100%', minWidth: '50%', flexGrow: 1 }}
                 />
-              </SandpackLayout>
+              </div>
+            </div>
+            <div style={{ height: '180px', borderTop: '1px solid rgb(55, 55, 55)' }}>
+              <CommandPanel />
             </div>
           </div>
-          <CommandPanel />
         </SandpackProvider>
       </div>
     </div>
   );
 };
 
-export default SandpackEditor; 
+export default SandpackEditor;
