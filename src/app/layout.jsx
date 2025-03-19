@@ -1,6 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import SandpackStyles from "@/components/SandpackStyles";
+import { SandpackStylesHandler } from "@/components/SandpackPanel";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <SandpackStyles />
+        <SandpackStylesHandler />
       </head>
       <body className={inter.className}>{children}</body>
     </html>

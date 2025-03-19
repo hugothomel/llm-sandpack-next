@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import SandpackClient from '@/components/SandpackClient';
 
-// Use dynamic import with no SSR for Sandpack
-const SandpackEditor = dynamic(
-  () => import('@/components/SandpackEditor'),
+// Use dynamic import with no SSR for SandpackPanel
+const SandpackPanel = dynamic(
+  () => import('@/components/SandpackPanel'),
   { 
     ssr: false,
     loading: () => (
@@ -31,9 +30,6 @@ export default function Home() {
   
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-6 md:p-8">
-      {/* Client-side Sandpack CSS injection */}
-      <SandpackClient />
-      
       <div className="w-full max-w-7xl space-y-6">
         <div className="text-center mb-4 md:mb-6">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">LLM-Integrated Sandpack</h1>
@@ -42,7 +38,7 @@ export default function Home() {
           </p>
         </div>
         
-        {isMounted && <SandpackEditor />}
+        {isMounted && <SandpackPanel />}
         
         <footer className="mt-6 text-center text-gray-500 text-sm">
           <p>Built with Next.js and Sandpack</p>

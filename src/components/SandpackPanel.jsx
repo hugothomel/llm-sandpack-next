@@ -5,10 +5,12 @@ import {
   SandpackProvider, 
   SandpackCodeEditor, 
   SandpackPreview,
-  useSandpack
+  useSandpack,
+  getSandpackCssText
 } from '@codesandbox/sandpack-react';
 // Module has no explicit type declarations
 import { SandpackFileExplorer } from 'sandpack-file-explorer';
+import { useServerInsertedHTML } from "next/navigation";
 import LogDisplay from './LogDisplay';
 import LLMCommandInput from './LLMCommandInput';
 
@@ -45,6 +47,49 @@ function brokenFunction() {
   </body>
 </html>`
   }
+};
+
+/**
+ * Ensures CSS-in-JS styles for Sandpack are loaded server side.
+ */
+export const SandpackStylesHandler = () => {
+  useServerInsertedHTML(() => {
+    return (
+      <style
+        dangerouslySetInnerHTML={{ __html: getSandpackCssText() }}
+        id="sandpack"
+      />
+    );
+  });
+  return null;
+};
+
+/**
+ * Client-side CSS injection for Sandpack
+ */
+const SandpackClientCSS = () => {
+  useEffect(() => {
+    // Only run in browser context
+    if (typeof window !== 'undefined') {
+      try {
+        // Get the CSS text from Sandpack
+        const sandpackCss = getSandpackCssText();
+        
+        // Create or update the style element
+        let styleElement = document.getElementById('sandpack-css');
+        if (!styleElement) {
+          styleElement = document.createElement('style');
+          styleElement.id = 'sandpack-css';
+          document.head.appendChild(styleElement);
+        }
+        styleElement.textContent = sandpackCss;
+      } catch (error) {
+        console.error('Error setting up Sandpack CSS:', error);
+      }
+    }
+  }, []);
+
+  return null;
 };
 
 // Command handling component
@@ -410,8 +455,16 @@ const CommandPanel = () => {
   );
 };
 
-// Main component
-const SandpackEditor = () => {
+/**
+ * SandpackPanel - Consolidated component that combines:
+ * 1. SandpackClient - Client-side CSS handling
+ * 2. SandpackStyles - Server-side CSS handling
+ * 3. SandpackEditor - Main editor functionality
+ */
+const SandpackPanel = () => {
+  // Include both CSS handlers
+  SandpackStylesHandler();
+  
   // Browser-side rendering check
   const [isMounted, setIsMounted] = useState(false);
   
@@ -430,6 +483,9 @@ const SandpackEditor = () => {
 
   return (
     <div className="flex flex-col space-y-6">
+      {/* Include client-side CSS handler */}
+      <SandpackClientCSS />
+      
       <div className="h-[600px] w-full">
         <SandpackProvider
           template="vanilla"
@@ -469,4 +525,4 @@ const SandpackEditor = () => {
   );
 };
 
-export default SandpackEditor; 
+export default SandpackPanel; 
