@@ -2,17 +2,8 @@
 
 import React, { useEffect, useRef } from 'react';
 
-interface Log {
-  type: 'info' | 'warning' | 'error';
-  message: string;
-}
-
-interface LogDisplayProps {
-  logs: Log[];
-}
-
-const LogDisplay: React.FC<LogDisplayProps> = ({ logs }) => {
-  const logEndRef = useRef<HTMLDivElement>(null);
+const LogDisplay = ({ logs }) => {
+  const logEndRef = useRef(null);
 
   useEffect(() => {
     // Auto-scroll to bottom of logs

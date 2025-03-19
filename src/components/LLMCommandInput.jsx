@@ -2,15 +2,10 @@
 
 import React, { useState } from 'react';
 
-interface LLMCommandInputProps {
-  onSubmit: (command: string) => void;
-  isLoading: boolean;
-}
+const LLMCommandInput = ({ onSubmit, isLoading }) => {
+  const [command, setCommand] = useState('');
 
-const LLMCommandInput: React.FC<LLMCommandInputProps> = ({ onSubmit, isLoading }) => {
-  const [command, setCommand] = useState<string>('');
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!command.trim()) return;
     

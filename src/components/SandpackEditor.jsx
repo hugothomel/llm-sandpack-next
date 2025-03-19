@@ -7,21 +7,10 @@ import {
   SandpackPreview,
   useSandpack
 } from '@codesandbox/sandpack-react';
-// @ts-ignore - Module has no explicit type declarations
+// Module has no explicit type declarations
 import { SandpackFileExplorer } from 'sandpack-file-explorer';
 import LogDisplay from './LogDisplay';
 import LLMCommandInput from './LLMCommandInput';
-
-interface Log {
-  type: 'info' | 'warning' | 'error' | 'success';
-  message: string;
-}
-
-interface ApiStatus {
-  usingOpenAI: boolean;
-  model: string | null;
-  message: string;
-}
 
 // Basic initial files
 const initialFiles = {
@@ -62,23 +51,19 @@ function brokenFunction() {
 const CommandPanel = () => {
   const { sandpack } = useSandpack();
   const { files, activeFile, updateFile } = sandpack;
-  const [logs, setLogs] = useState<Log[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [planningStep, setPlanningStep] = useState<boolean>(false);
-  const [plan, setPlan] = useState<{ 
-    description: string; 
-    filesToModify: string[];
-    fileExplanations?: Record<string, string>;
-  } | null>(null);
-  const [apiStatus, setApiStatus] = useState<ApiStatus>({ 
+  const [logs, setLogs] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [planningStep, setPlanningStep] = useState(false);
+  const [plan, setPlan] = useState(null);
+  const [apiStatus, setApiStatus] = useState({ 
     usingOpenAI: false, 
     model: null, 
     message: 'Checking API status...' 
   });
-  const commandRef = useRef<HTMLInputElement>(null);
+  const commandRef = useRef(null);
 
   // Helper to add a log message
-  const addLog = (log: Log) => {
+  const addLog = (log) => {
     setLogs(prev => [...prev, log]);
   };
   
@@ -131,7 +116,7 @@ const CommandPanel = () => {
     
     try {
       // Prepare all files to send to the API
-      const allFiles: Record<string, string> = {};
+      const allFiles = {};
       
       // Get all files content from Sandpack
       Object.entries(files).forEach(([filePath, fileData]) => {
@@ -167,7 +152,7 @@ const CommandPanel = () => {
       } else {
         addLog({ type: 'error', message: data.message || 'Failed to generate a plan' });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error generating plan:', error);
       addLog({ type: 'error', message: `Error: ${error.message}` });
     } finally {
@@ -193,7 +178,7 @@ const CommandPanel = () => {
       }
       
       // Prepare all files to send to the API
-      const allFiles: Record<string, string> = {};
+      const allFiles = {};
       
       // Get all files content from Sandpack
       Object.entries(files).forEach(([filePath, fileData]) => {
@@ -278,7 +263,7 @@ const CommandPanel = () => {
       }
       
       addLog({ type: 'success', message: 'Plan execution completed.' });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error executing plan:', error);
       addLog({ type: 'error', message: `Execution error: ${error.message}` });
     } finally {
@@ -295,7 +280,7 @@ const CommandPanel = () => {
   };
 
   // Execute the command
-  const handleExecuteCommand = async (e: React.FormEvent) => {
+  const handleExecuteCommand = async (e) => {
     e.preventDefault();
     const commandText = commandRef.current?.value?.trim();
     if (!commandText) {
@@ -484,4 +469,4 @@ const SandpackEditor = () => {
   );
 };
 
-export default SandpackEditor;
+export default SandpackEditor; 
