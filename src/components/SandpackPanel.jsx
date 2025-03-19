@@ -11,8 +11,7 @@ import {
 // Module has no explicit type declarations
 import { SandpackFileExplorer } from 'sandpack-file-explorer';
 import { useServerInsertedHTML } from "next/navigation";
-import LogDisplay from './LogDisplay';
-import LLMCommandInput from './LLMCommandInput';
+import ChatPanel from './ChatPanel';
 
 // Basic initial files
 const initialFiles = {
@@ -105,19 +104,10 @@ const CommandPanel = () => {
     model: null, 
     message: 'Checking API status...' 
   });
-  const commandRef = useRef(null);
 
   // Helper to add a log message
   const addLog = (log) => {
     setLogs(prev => [...prev, log]);
-  };
-  
-  // Styles for different log types
-  const logTypeStyles = {
-    info: 'bg-blue-100 text-blue-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    error: 'bg-red-100 text-red-800',
-    success: 'bg-green-100 text-green-800'
   };
 
   // Fetch API status on component mount
@@ -145,9 +135,7 @@ const CommandPanel = () => {
   }, []);
 
   // Handler for generating a plan
-  const handleGeneratePlan = async () => {
-    // Get the command from the input
-    const commandText = commandRef.current?.value?.trim();
+  const handleGeneratePlan = async (commandText) => {
     if (!commandText) {
       addLog({ type: 'error', message: 'Please enter a command.' });
       return;
@@ -189,10 +177,15 @@ const CommandPanel = () => {
       }
       
       if (data.plan) {
-        setPlan(data.plan);
+        // Store the plan with the original command attached
+        const planWithCommand = {
+          ...data.plan,
+          originalCommand: commandText
+        };
+        setPlan(planWithCommand);
         addLog({ 
           type: 'success', 
-          message: `Plan generated: ${data.plan.description}` 
+          message: `Plan generated: ${planWithCommand.description}` 
         });
       } else {
         addLog({ type: 'error', message: data.message || 'Failed to generate a plan' });
@@ -206,7 +199,7 @@ const CommandPanel = () => {
   };
 
   // Execute the plan
-  const handleExecutePlan = async () => {
+  const handleExecutePlan = async (commandText) => {
     if (!plan || isLoading) return;
     
     // Turn off planning mode and enter execution mode
@@ -215,8 +208,6 @@ const CommandPanel = () => {
     addLog({ type: 'info', message: 'Executing plan...' });
     
     try {
-      // Get the active command
-      const commandText = commandRef.current?.value?.trim();
       if (!commandText) {
         addLog({ type: 'error', message: 'Command text is missing.' });
         return;
@@ -325,68 +316,35 @@ const CommandPanel = () => {
   };
 
   // Execute the command
-  const handleExecuteCommand = async (e) => {
-    e.preventDefault();
-    const commandText = commandRef.current?.value?.trim();
-    if (!commandText) {
-      addLog({ type: 'error', message: 'Please enter a command.' });
-      return;
-    }
-    
+  const handleExecuteCommand = async (commandText) => {
     // Begin with planning phase
-    await handleGeneratePlan();
+    await handleGeneratePlan(commandText);
   };
 
-  const apiStatusBadge = (
-    <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-      apiStatus.usingOpenAI ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-    }`}>
-      {apiStatus.usingOpenAI ? `🟢 Using OpenAI (${apiStatus.model})` : '🟠 Using Mock LLM'} 
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 flex-none">
-        <form onSubmit={handleExecuteCommand} className="flex space-x-2">
-          <input
-            ref={commandRef}
-            type="text"
-            placeholder="Enter an LLM command..."
-            className="flex-grow px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Working...' : planningStep ? 'Plan' : 'Execute'}
-          </button>
-        </form>
-      </div>
-
-      {/* API Status Display */}
-      <div className="px-4 py-2 bg-gray-100 border-b text-sm flex justify-between items-center">
-        <div>
-          {apiStatus.usingOpenAI ? (
-            <span className="text-green-600 font-medium">
-              Using OpenAI API ({apiStatus.model})
-            </span>
-          ) : (
-            <span className="text-orange-500 font-medium">
-              Using Mock API (limited functionality)
-            </span>
-          )}
+  // Conditionally render either plan execution UI or chat panel
+  if (planningStep && plan) {
+    return (
+      <div className="flex flex-col h-full">
+        {/* API Status Display */}
+        <div className="px-4 py-2 bg-gray-100 border-b text-sm flex justify-between items-center">
+          <div>
+            {apiStatus.usingOpenAI ? (
+              <span className="text-green-600 font-medium">
+                Using OpenAI API ({apiStatus.model})
+              </span>
+            ) : (
+              <span className="text-orange-500 font-medium">
+                Using Mock API (limited functionality)
+              </span>
+            )}
+          </div>
+          <div className="text-gray-600">
+            {apiStatus.message}
+          </div>
         </div>
-        <div className="text-gray-600">
-          {apiStatus.message}
-        </div>
-      </div>
-
-      {/* Log Display */}
-      <div className="flex-grow overflow-auto p-4 bg-gray-50">
-        {planningStep && plan ? (
+        
+        {/* Plan Execution UI */}
+        <div className="flex-grow overflow-auto p-4 bg-gray-50">
           <div className="bg-white p-4 rounded border">
             <h4 className="text-lg font-semibold mb-2">Execution Plan</h4>
             <p className="mb-3">{plan.description}</p>
@@ -422,16 +380,16 @@ const CommandPanel = () => {
                 })}
               </ul>
             </div>
-                        
+                      
             <div className="flex mt-4 space-x-3">
               <button 
-                onClick={handleExecutePlan}
+                onClick={() => handleExecutePlan(plan.originalCommand)}
                 disabled={isLoading}
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Processing...' : 'Execute Plan'}
               </button>
-                      
+                    
               <button 
                 onClick={handleCancelPlan}
                 disabled={isLoading}
@@ -441,16 +399,38 @@ const CommandPanel = () => {
               </button>
             </div>
           </div>
-        ) : (
-          <div className="space-y-2">
-            {logs.map((log, index) => (
-              <div key={index} className={`p-2 rounded ${logTypeStyles[log.type]}`}>
-                {log.message}
-              </div>
-            ))}
-          </div>
-        )}
+        </div>
       </div>
+    );
+  }
+
+  // Display the ChatPanel component in normal mode
+  return (
+    <div className="flex flex-col h-full">
+      {/* API Status Display */}
+      <div className="px-4 py-2 bg-gray-100 border-b text-sm flex justify-between items-center">
+        <div>
+          {apiStatus.usingOpenAI ? (
+            <span className="text-green-600 font-medium">
+              Using OpenAI API ({apiStatus.model})
+            </span>
+          ) : (
+            <span className="text-orange-500 font-medium">
+              Using Mock API (limited functionality)
+            </span>
+          )}
+        </div>
+        <div className="text-gray-600">
+          {apiStatus.message}
+        </div>
+      </div>
+        
+      {/* Use the new ChatPanel component */}
+      <ChatPanel 
+        logs={logs}
+        isLoading={isLoading}
+        onSubmitCommand={handleExecuteCommand}
+      />
     </div>
   );
 };
