@@ -66,7 +66,7 @@ const ChatPanel = ({ sandpackMethods }) => {
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        const response = await fetch('/api/ai?operation=status');
+        const response = await fetch('/api/llm-commands?operation=status');
         const data = await response.json();
         setApiStatus({
           usingOpenAI: data.usingOpenAI,
@@ -123,7 +123,7 @@ const ChatPanel = ({ sandpackMethods }) => {
       });
       
       // Call the API to generate a plan
-      const response = await fetch('/api/ai', {
+      const response = await fetch('/api/llm-commands', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -208,7 +208,7 @@ const ChatPanel = ({ sandpackMethods }) => {
           addLog({ type: 'info', message: `Creating new file: ${filePath}` });
           
           // For new files, generate content from scratch
-          const response = await fetch('/api/ai', {
+          const response = await fetch('/api/llm-commands', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -242,7 +242,7 @@ const ChatPanel = ({ sandpackMethods }) => {
           addLog({ type: 'info', message: `Modifying: ${filePath}` });
           
           // Call API to process command for this existing file
-          const response = await fetch('/api/ai', {
+          const response = await fetch('/api/llm-commands', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
