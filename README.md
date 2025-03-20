@@ -15,10 +15,10 @@ The repository consists of two main parts:
 
 2. **Next.js Application (`llm-sandpack-next/`)**
    - A complete Next.js application with its own structure:
-     - `src/app/` - Contains the main application pages and layout
+     - `src/pages/` - Contains the main application pages and layout
      - `src/components/` - React components for the UI
      - `src/utils/` - Utility functions
-     - `src/app/api/` - API routes for LLM functionality
+     - `src/pages/api/` - API routes for LLM functionality
 
 ## Key Features
 
@@ -46,14 +46,34 @@ The repository consists of two main parts:
 
 ## Core Components
 
-### SandpackEditor
+### Critical Architecture Components (Do Not Modify)
 
-The central component of the application, `SandpackEditor.jsx`, integrates Sandpack with LLM capabilities. It provides:
+The following components form the core architecture of LLM Sandpack and should not be modified if implementing this system in another application:
 
-- A code editor for writing and editing code
-- A file explorer for managing files
-- A preview pane to see the results in real-time
-- A command panel for entering and processing LLM commands
+#### 1. **SandpackCodePanel**
+
+This component (formerly named `SandpackPanel`) is the central UI element that provides:
+- The Sandpack code editor interface
+- File explorer functionality
+- Live preview rendering
+- Integration with Sandpack methods
+
+It exposes critical methods through the `onSandpackReady` callback that other components depend on.
+
+#### 2. **SandpackChatPanel**
+
+This component (formerly named `ChatPanel`) handles all LLM interactions:
+- Command input and submission
+- Communication with the LLM API endpoint
+- Plan generation and execution
+- Log display and user feedback
+
+#### 3. **Critical Sandpack Methods**
+
+The following Sandpack methods are essential for the LLM integration to work:
+- `getFiles()` - Retrieves all files in the Sandpack environment
+- `getActiveFile()` - Gets the currently active file path
+- `updateFile(filePath, newCode)` - Updates or creates files with new content
 
 ### Command Processing
 
@@ -67,19 +87,19 @@ The command processing flow works as follows:
 
 ### API Endpoints
 
-- `/api/llm-command/` - Processes commands to modify existing files
-- `/api/llm-plan/` - Generates plans for executing complex commands
-- `/api/status/` - Checks the API status and model availability
-- `/api/health/` - Health check endpoint
+- `/api/llm-commands` - Main endpoint that processes all LLM operations:
+  - `?operation=status` - Checks the API status and model availability 
+  - `POST` with `operation=plan` - Generates plans for executing complex commands
+  - `POST` with `operation=command` - Processes commands to modify existing files
 
 ## How It Works
 
 1. **Initialization**
    - The application loads with a set of initial files in the Sandpack environment
-   - The SandpackEditor component initializes with the Sandpack provider and UI components
+   - The SandpackCodePanel component initializes with the Sandpack provider and UI components
 
 2. **Command Input**
-   - Users can enter natural language commands using the LLMCommandInput component
+   - Users can enter natural language commands using the SandpackChatPanel component
    - Commands are sent to the API for processing
 
 3. **Planning Phase**
@@ -156,7 +176,7 @@ To extend the application with new features:
 
 1. **Add new components** in the `components/` directory
 2. **Create new API endpoints** in the `api/` directory
-3. **Modify the SandpackEditor** to add new functionality
+3. **Modify the SandpackCodePanel** to add new functionality
 4. **Enhance the command processing** to handle more complex commands
 
 ## Limitations and Considerations
@@ -170,3 +190,72 @@ To extend the application with new features:
 - **API Connection Issues**: Check your API key and environment variables
 - **Command Processing Errors**: Try simplifying your command or breaking it into multiple steps
 - **Sandpack Editor Loading**: If the editor fails to load, check your browser console for errors
+
+# LLM Sandpack Next
+
+A Next.js application that integrates Sandpack Editor with LLM capabilities.
+
+## API Endpoints
+
+The application provides a unified API endpoint for all LLM operations:
+
+### GET /api/llm-commands
+
+- `operation=health`: Check API health
+- `operation=status`: Get the current status of the LLM service (OpenAI or Mock)
+
+```bash
+# Health check
+curl -X GET "http://localhost:3000/api/llm-commands?operation=health"
+
+# Status check 
+curl -X GET "http://localhost:3000/api/llm-commands?operation=status"
+```
+
+### POST /api/llm-commands
+
+This endpoint handles two main operations:
+
+#### Plan Generation (`operation=plan`)
+
+```json
+{
+  "operation": "plan",
+  "command": "Your command text",
+  "files": { 
+    "/file1.js": "content of file1",
+    "/file2.js": "content of file2"
+  },
+  "activeFile": "/file1.js"
+}
+```
+
+#### Command Execution (`operation=command`)
+
+```json
+{
+  "operation": "command",
+  "command": "Your command text",
+  "currentCode": "Current file content",
+  "filePath": "/path/to/file.js",
+  "allFiles": {
+    "/file1.js": "content of file1",
+    "/file2.js": "content of file2"
+  },
+  "isNewFile": false
+}
+```
+
+## Environment Variables
+
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `OPENAI_MODEL`: The model to use (defaults to 'gpt-3.5-turbo')
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+Then open http://localhost:3000 in your browser.
