@@ -114,7 +114,7 @@ const CommandPanel = () => {
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        const response = await fetch('/api/status');
+        const response = await fetch('/api/ai?operation=status');
         const data = await response.json();
         setApiStatus({
           usingOpenAI: data.usingOpenAI,
@@ -160,10 +160,11 @@ const CommandPanel = () => {
       });
       
       // Call the API to generate a plan
-      const response = await fetch('/api/llm-plan', {
+      const response = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          operation: 'plan',
           command: commandText,
           files: allFiles,
           activeFile
@@ -233,10 +234,11 @@ const CommandPanel = () => {
           addLog({ type: 'info', message: `Creating new file: ${filePath}` });
           
           // For new files, generate content from scratch
-          const response = await fetch('/api/llm-command', {
+          const response = await fetch('/api/ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              operation: 'command',
               command: `${commandText} - Create new file ${filePath}`,
               currentCode: '', // Start with empty content
               filePath: filePath,
@@ -266,10 +268,11 @@ const CommandPanel = () => {
           addLog({ type: 'info', message: `Modifying: ${filePath}` });
           
           // Call API to process command for this existing file
-          const response = await fetch('/api/llm-command', {
+          const response = await fetch('/api/ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              operation: 'command',
               command: commandText,
               currentCode: files[filePath].code,
               filePath: filePath,

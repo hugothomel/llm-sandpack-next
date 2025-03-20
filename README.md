@@ -170,3 +170,72 @@ To extend the application with new features:
 - **API Connection Issues**: Check your API key and environment variables
 - **Command Processing Errors**: Try simplifying your command or breaking it into multiple steps
 - **Sandpack Editor Loading**: If the editor fails to load, check your browser console for errors
+
+# LLM Sandpack Next
+
+A Next.js application that integrates Sandpack Editor with LLM capabilities.
+
+## API Endpoints
+
+The application provides a unified API endpoint for all LLM operations:
+
+### GET /api/ai
+
+- `operation=health`: Check API health
+- `operation=status`: Get the current status of the LLM service (OpenAI or Mock)
+
+```bash
+# Health check
+curl -X GET "http://localhost:3000/api/ai?operation=health"
+
+# Status check 
+curl -X GET "http://localhost:3000/api/ai?operation=status"
+```
+
+### POST /api/ai
+
+This endpoint handles two main operations:
+
+#### Plan Generation (`operation=plan`)
+
+```json
+{
+  "operation": "plan",
+  "command": "Your command text",
+  "files": { 
+    "/file1.js": "content of file1",
+    "/file2.js": "content of file2"
+  },
+  "activeFile": "/file1.js"
+}
+```
+
+#### Command Execution (`operation=command`)
+
+```json
+{
+  "operation": "command",
+  "command": "Your command text",
+  "currentCode": "Current file content",
+  "filePath": "/path/to/file.js",
+  "allFiles": {
+    "/file1.js": "content of file1",
+    "/file2.js": "content of file2"
+  },
+  "isNewFile": false
+}
+```
+
+## Environment Variables
+
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `OPENAI_MODEL`: The model to use (defaults to 'gpt-3.5-turbo')
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+Then open http://localhost:3000 in your browser.
