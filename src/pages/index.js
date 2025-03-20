@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import ChatPanel from '@/components/ChatPanel';
@@ -21,9 +19,6 @@ const SandpackPanel = dynamic(
 );
 
 export default function Home() {
-  // State to handle browser-side rendering
-  const [isMounted, setIsMounted] = useState(false);
-  
   // State to track Sandpack methods availability
   const [sandpackMethods, setSandpackMethods] = useState(null);
 
@@ -35,14 +30,9 @@ export default function Home() {
       setSandpackMethods(methods);
     }
   };
-
-  // Ensure we're rendering in the browser
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
   
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 sm:p-6 md:p-8">
+    <div className="flex min-h-screen flex-col items-center p-4 sm:p-6 md:p-8">
       <div className="w-full max-w-7xl space-y-6">
         <div className="text-center mb-4 md:mb-6">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">LLM-Integrated Sandpack</h1>
@@ -51,22 +41,20 @@ export default function Home() {
           </p>
         </div>
         
-        {isMounted && (
-          <div className="flex flex-col space-y-6">
-            {/* Sandpack Editor */}
-            <SandpackPanel onSandpackReady={handleSandpackReady} />
-            
-            {/* Chat Panel with access to Sandpack methods */}
-            <div className="h-[300px] border border-gray-200 rounded-lg overflow-hidden">
-              <ChatPanel sandpackMethods={sandpackMethods} />
-            </div>
+        <div className="flex flex-col space-y-6">
+          {/* Sandpack Editor */}
+          <SandpackPanel onSandpackReady={handleSandpackReady} />
+          
+          {/* Chat Panel with access to Sandpack methods */}
+          <div className="h-[300px] border border-gray-200 rounded-lg overflow-hidden">
+            <ChatPanel sandpackMethods={sandpackMethods} />
           </div>
-        )}
+        </div>
         
         <footer className="mt-6 text-center text-gray-500 text-sm">
           <p>Built with Next.js and Sandpack</p>
         </footer>
       </div>
-    </main>
+    </div>
   );
 } 

@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { 
   SandpackProvider, 
@@ -9,7 +7,6 @@ import {
   getSandpackCssText
 } from '@codesandbox/sandpack-react';
 import { SandpackFileExplorer } from 'sandpack-file-explorer';
-import { useServerInsertedHTML } from "next/navigation";
 
 // Basic initial files
 const initialFiles = {
@@ -44,21 +41,6 @@ function brokenFunction() {
   </body>
 </html>`
   }
-};
-
-/**
- * Ensures CSS-in-JS styles for Sandpack are loaded server side.
- */
-export const SandpackStylesHandler = () => {
-  useServerInsertedHTML(() => {
-    return (
-      <style
-        dangerouslySetInnerHTML={{ __html: getSandpackCssText() }}
-        id="sandpack"
-      />
-    );
-  });
-  return null;
 };
 
 /**
@@ -143,9 +125,6 @@ const SandpackWrapper = ({ onSandpackReady }) => {
  * SandpackPanel - Provides a code editor with Sandpack
  */
 const SandpackPanel = ({ onSandpackReady }) => {
-  // Include both CSS handlers
-  SandpackStylesHandler();
-  
   // Browser-side rendering check
   const [isMounted, setIsMounted] = useState(false);
   
