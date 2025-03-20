@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 /**
- * ChatPanel - Component that handles:
+ * SandpackChatPanel - Component that handles:
  * 1. Command input and submission
  * 2. Log display
  * 3. Plan generation and execution
  */
-const ChatPanel = ({ sandpackMethods }) => {
+const SandpackChatPanel = ({ sandpackMethods }) => {
   // State for command handling
   const [command, setCommand] = useState('');
   const [logs, setLogs] = useState([]);
@@ -474,4 +474,4 @@ const ChatPanel = ({ sandpackMethods }) => {
   );
 };
 
-export default ChatPanel; 
+export default SandpackChatPanel; 

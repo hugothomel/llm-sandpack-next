@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import ChatPanel from '@/components/ChatPanel';
+import SandpackChatPanel from '@/components/SandpackChatPanel';
 
-// Use dynamic import with no SSR for SandpackPanel
-const SandpackPanel = dynamic(
-  () => import('@/components/SandpackPanel'),
+// Use dynamic import with no SSR for SandpackCodePanel
+const SandpackCodePanel = dynamic(
+  () => import('@/components/SandpackCodePanel'),
   { 
     ssr: false,
     loading: () => (
@@ -42,12 +42,12 @@ export default function Home() {
         </div>
         
         <div className="flex flex-col space-y-6">
-          {/* Sandpack Editor */}
-          <SandpackPanel onSandpackReady={handleSandpackReady} />
+          {/* Sandpack Code Editor */}
+          <SandpackCodePanel onSandpackReady={handleSandpackReady} />
           
-          {/* Chat Panel with access to Sandpack methods */}
+          {/* Sandpack Chat Panel with access to Sandpack methods */}
           <div className="h-[300px] border border-gray-200 rounded-lg overflow-hidden">
-            <ChatPanel sandpackMethods={sandpackMethods} />
+            <SandpackChatPanel sandpackMethods={sandpackMethods} />
           </div>
         </div>
         

@@ -122,9 +122,9 @@ const SandpackWrapper = ({ onSandpackReady }) => {
 };
 
 /**
- * SandpackPanel - Provides a code editor with Sandpack
+ * SandpackCodePanel - Provides a code editor with Sandpack
  */
-const SandpackPanel = ({ onSandpackReady }) => {
+const SandpackCodePanel = ({ onSandpackReady }) => {
   // Browser-side rendering check
   const [isMounted, setIsMounted] = useState(false);
   
@@ -163,4 +163,4 @@ const SandpackPanel = ({ onSandpackReady }) => {
   );
 };
 
-export default SandpackPanel; 
+export default SandpackCodePanel; 
