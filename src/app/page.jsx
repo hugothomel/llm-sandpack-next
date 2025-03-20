@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import ChatPanel from '@/components/ChatPanel';
 
 // Use dynamic import with no SSR for SandpackPanel
 const SandpackPanel = dynamic(
@@ -22,6 +23,18 @@ const SandpackPanel = dynamic(
 export default function Home() {
   // State to handle browser-side rendering
   const [isMounted, setIsMounted] = useState(false);
+  
+  // State to track Sandpack methods availability
+  const [sandpackMethods, setSandpackMethods] = useState(null);
+
+  // Store Sandpack methods when the component is ready
+  const handleSandpackReady = (methods) => {
+    // Only update if methods aren't already set
+    if (!sandpackMethods) {
+      console.log("Sandpack ready, methods available");
+      setSandpackMethods(methods);
+    }
+  };
 
   // Ensure we're rendering in the browser
   useEffect(() => {
@@ -38,7 +51,17 @@ export default function Home() {
           </p>
         </div>
         
-        {isMounted && <SandpackPanel />}
+        {isMounted && (
+          <div className="flex flex-col space-y-6">
+            {/* Sandpack Editor */}
+            <SandpackPanel onSandpackReady={handleSandpackReady} />
+            
+            {/* Chat Panel with access to Sandpack methods */}
+            <div className="h-[300px] border border-gray-200 rounded-lg overflow-hidden">
+              <ChatPanel sandpackMethods={sandpackMethods} />
+            </div>
+          </div>
+        )}
         
         <footer className="mt-6 text-center text-gray-500 text-sm">
           <p>Built with Next.js and Sandpack</p>
